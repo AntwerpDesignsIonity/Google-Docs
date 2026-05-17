@@ -31,6 +31,8 @@ const crypto = require("crypto");
 const ROOT = __dirname;
 const PORT_PREF = parseInt(process.env.IONITY_INSTALLER_PORT || "0", 10);
 const HOST = "127.0.0.1";
+// Cap retained log lines per job so a runaway process can't exhaust memory.
+const MAX_LOG_LINES = 5000;
 
 // A random token guards all action endpoints so other local processes
 // can't trigger installs against this server.
@@ -49,12 +51,13 @@ function createJob(label) {
 }
 
 function pushLog(job, chunk) {
-  // Cap log length so a runaway process can't exhaust memory.
   const text = chunk.toString();
   for (const line of text.split(/\r?\n/)) {
     if (line.length === 0) continue;
     job.log.push(line);
-    if (job.log.length > 5000) job.log.splice(0, job.log.length - 5000);
+    if (job.log.length > MAX_LOG_LINES) {
+      job.log.splice(0, job.log.length - MAX_LOG_LINES);
+    }
   }
 }
 

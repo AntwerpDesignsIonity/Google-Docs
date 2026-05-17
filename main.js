@@ -37,10 +37,19 @@ function createWindow() {
   mainWindow.loadURL(START_URL);
 
   // Open external links in the user's default browser instead of a new window.
+  const allowedHosts = new Set([
+    "docs.google.com",
+    "drive.google.com",
+    "accounts.google.com",
+  ]);
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith("https://docs.google.com") ||
-        url.startsWith("https://drive.google.com") ||
-        url.startsWith("https://accounts.google.com")) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch (_) {
+      return { action: "deny" };
+    }
+    if (parsed.protocol === "https:" && allowedHosts.has(parsed.hostname)) {
       return { action: "allow" };
     }
     shell.openExternal(url);
