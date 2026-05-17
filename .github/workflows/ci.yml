@@ -1,93 +1,35 @@
 name: Build
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
-  # Snapcraft Token Valid till 10 March, 2023
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  build-linux:
-    name: Linux
-    runs-on: ubuntu-latest
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-    - name: Install Snapcraft
-      uses: samuelmeuli/action-snapcraft@v1.2.0
-      with:
-        snapcraft_token: ${{ secrets.SNAPCRAFT_TOKEN }}
-    - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm install
-        sudo apt install flatpak flatpak-builder elfutils
-        npm run package && cd "out/Google Docs-linux-x64" && ls
-        npm run make && npm run publish
-    - uses: actions/upload-artifact@v3
-      with:
-        name: Linux
-        path: out/make/*
-    - name: Use Snapcraft
-      run: |
-        snapcraft --help
-        snapcraft upload --release=stable "out/make/Google Docs-linux-x64.snap"
-  
-  build-mac:
-    name: macOS
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Prepare for app signing and notarization
-      env:
-        API_KEY: ${{ secrets.api_key }}
-      if: ${{ env.API_KEY }}
-      run: |
-        echo "CSC_LINK=${{ secrets.mac_cert }}" >> $GITHUB_ENV
-        echo "CSC_KEY_PASSWORD=${{ secrets.mac_cert_password }}" >> $GITHUB_ENV
-        echo "APPLE_ID=${{ secrets.apple_id }}" >> $GITHUB_ENV
-        echo "APPLE_ID_PASSWORD=${{ secrets.apple_id_password }}" >> $GITHUB_ENV
-        echo "TEAM_ID=${{ secrets.team_id }}" >> $GITHUB_ENV
-    - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm install
-        npm install appdmg --save-dev
-        npm run publish
-    - uses: actions/upload-artifact@v3
-      with:
-        name: macOS
-        path: out/make/*
-  build-windows:
-    name: Windows
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-    - name: Build it
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm install
-        npm run publish
-    - uses: actions/upload-artifact@v3
-      with:
-        name: Windows
-        path: out/make/squirrel.windows/x64/Google-Docs-Windows.exe
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Package application
+        run: npm run package
+      - name: Build installers
+        run: npm run make
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IONITY-${{ matrix.os }}
+          path: out/make/**
+          if-no-files-found: ignore
