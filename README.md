@@ -59,7 +59,7 @@ npm run make          # build native installers for your platform
 - Node.js 18 or newer (Node 20+ recommended)
 - npm
 - Standard Electron build prerequisites for your platform
-  (see [electronjs.org/docs/latest/development/build-instructions-gn](https://www.electronjs.org/docs/latest/development/build-instructions-gn)).
+  (see [Electron Forge documentation](https://www.electronforge.io/)).
 
 ## Project Layout
 
