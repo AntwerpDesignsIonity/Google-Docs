@@ -1,45 +1,34 @@
 {
-  "name": "google-docs",
-  "productName": "Google Docs",
-  "version": "2022.12.1",
-  "description": "Google Docs is a free universal desktop app containing an office suite.",
+  "name": "ionity",
+  "productName": "IONITY",
+  "version": "1.0.0",
+  "description": "IONITY desktop wrapper for Google Docs.",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
-    "dist": "electron-builder",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish"
+    "installer": "node installer.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Comp-Labs/Google-Docs"
+    "url": "git+https://github.com/AntwerpDesignsIonity/Google-Docs"
   },
   "keywords": [
-    "Google",
+    "IONITY",
     "Docs",
-    "Productivity",
-    "App"
+    "Productivity"
   ],
-  "author": "Tech Fiddle <complabs28@gmail.com>",
+  "author": "AntwerpDesignsIonity",
   "license": "MIT",
   "devDependencies": {
-    "@electron-forge/cli": "latest",
-    "@electron-forge/maker-deb": "latest",
-    "@electron-forge/maker-dmg": "latest",
-    "@electron-forge/maker-flatpak": "latest",
-    "@electron-forge/maker-rpm": "latest",
-    "@electron-forge/maker-snap": "latest",
-    "@electron-forge/maker-squirrel": "latest",
-    "@electron-forge/maker-zip": "latest",
-    "@electron-forge/publisher-github": "latest",
-    "@electron-forge/publisher-snapcraft": "latest",
+    "@electron-forge/cli": "^7.4.0",
+    "@electron-forge/maker-deb": "^7.4.0",
+    "@electron-forge/maker-dmg": "^7.4.0",
+    "@electron-forge/maker-rpm": "^7.4.0",
+    "@electron-forge/maker-squirrel": "^7.4.0",
+    "@electron-forge/maker-zip": "^7.4.0",
     "electron": "^31.1.0"
   },
-  "dependencies": {
-    "electron-squirrel-startup": "latest",
-    "update-electron-app": "latest",
-    "appdmg": "latest"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "dependencies": {}
 }

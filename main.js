@@ -1,88 +1,96 @@
-if (require('electron-squirrel-startup')) return;
+// IONITY - Desktop wrapper for Google Docs
+// Main Electron process.
 
-// Modules to control application life and create native browser window
-const { app, BrowserWindow, Menu, session } = require("electron")
-const path = require("path")
-const { updateElectronApp, UpdateSourceType } = require('update-electron-app')
+const { app, BrowserWindow, Menu, shell } = require("electron");
+const path = require("path");
+
+const APP_NAME = "IONITY";
+const APP_VERSION = require("./package.json").version;
+const START_URL = "https://docs.google.com/document/u/0/?pli=1";
+
+// Workarounds for IME issues on some platforms (see upstream issue #48).
+app.commandLine.appendSwitch("disable-features", "ImmersiveIme");
+app.commandLine.appendSwitch("enable-blink-features", "TextInputIme");
+
+app.setName(APP_NAME);
+
+/** @type {BrowserWindow | null} */
+let mainWindow = null;
 
 function createWindow() {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    icon: __dirname + "/assets/icon.ico",
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 640,
+    minHeight: 480,
+    title: APP_NAME,
+    icon: path.join(__dirname, "assets", "icon.png"),
+    backgroundColor: "#ffffff",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
-      nativeWindowOpen: true,
-      contextIsolation: false,
-      sandbox: false,
+      contextIsolation: true,
+      sandbox: true,
     },
   });
 
-  mainWindow.webContents.setUserAgent("Chrome");
-  //  = "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko"
-  mainWindow.loadURL("https://docs.google.com/document/u/0/?pli=1");
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.loadURL(START_URL);
+
+  // Open external links in the user's default browser instead of a new window.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("https://docs.google.com") ||
+        url.startsWith("https://drive.google.com") ||
+        url.startsWith("https://accounts.google.com")) {
+      return { action: "allow" };
+    }
+    shell.openExternal(url);
+    return { action: "deny" };
+  });
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 }
-// Workarounds - #48
-app.commandLine.appendSwitch('disable-features', 'ImmersiveIme');
-app.commandLine.appendSwitch('enable-blink-features', 'TextInputIme');
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+
 app.whenReady().then(createWindow);
 
-app.on("activate", function () {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
+app.on("activate", () => {
+  // On macOS re-create a window when the dock icon is clicked and no windows are open.
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  mainWindow.webContents.on('new-window', (event, url) => {
-    event.preventDefault()
-    mainWindow.loadURL(url)
-  })
 });
 
-updateElectronApp()
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on("window-all-closed", function () {
+app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+// ---------------------------------------------------------------------------
+// Application menu
+// ---------------------------------------------------------------------------
 const isMac = process.platform === "darwin";
 
 const template = [
-  // { role: 'appMenu' }
   ...(isMac
     ? [
-      {
-        label: app.name,
-        submenu: [
-          { role: "about" },
-          { type: "separator" },
-          { role: "services" },
-          { type: "separator" },
-          { role: "hide" },
-          { role: "hideOthers" },
-          { role: "unhide" },
-          { type: "separator" },
-          { role: "quit" },
-        ],
-      },
-    ]
+        {
+          label: APP_NAME,
+          submenu: [
+            { role: "about" },
+            { type: "separator" },
+            { role: "services" },
+            { type: "separator" },
+            { role: "hide" },
+            { role: "hideOthers" },
+            { role: "unhide" },
+            { type: "separator" },
+            { role: "quit" },
+          ],
+        },
+      ]
     : []),
-  // { role: 'fileMenu' }
   {
     label: "File",
     submenu: [isMac ? { role: "close" } : { role: "quit" }],
   },
-  // { role: 'editMenu' }
   {
     label: "Edit",
     submenu: [
@@ -94,27 +102,23 @@ const template = [
       { role: "paste" },
       ...(isMac
         ? [
-          { role: "pasteAndMatchStyle" },
-          { role: "delete" },
-          { role: "selectAll" },
-          { type: "separator" },
-          {
-            label: "Speech",
-            submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
-          },
-        ]
+            { role: "pasteAndMatchStyle" },
+            { role: "delete" },
+            { role: "selectAll" },
+            { type: "separator" },
+            {
+              label: "Speech",
+              submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
+            },
+          ]
         : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
     ],
   },
-  // { role: 'viewMenu' }
   {
-    role: 'viewMenu',
     label: "View",
     submenu: [
       { role: "reload" },
       { role: "forceReload" },
-      // { role: "goBack" },
-      // { role: "goForward" },
       { role: "toggleDevTools" },
       { type: "separator" },
       { role: "resetZoom" },
@@ -124,76 +128,38 @@ const template = [
       { role: "togglefullscreen" },
     ],
   },
-  // { role: 'windowMenu' }
   {
-    role: 'windowMenu',
     label: "Window",
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
       ...(isMac
         ? [
-          { type: "separator" },
-          { role: "front" },
-          { type: "separator" },
-          { role: "window" },
-        ]
+            { type: "separator" },
+            { role: "front" },
+            { type: "separator" },
+            { role: "window" },
+          ]
         : [{ role: "close" }]),
     ],
   },
   {
     role: "help",
     submenu: [
+      { label: `${APP_NAME} v${APP_VERSION}`, enabled: false },
       {
-        label: "Google Docs v2022.12.1",
-        enabled: false
+        label: "Project Repository",
+        click: () => shell.openExternal("https://github.com/AntwerpDesignsIonity/Google-Docs"),
       },
       {
-        label: "Website",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://techfiddle.io/");
-        },
+        label: "Report an Issue",
+        click: () =>
+          shell.openExternal(
+            "https://github.com/AntwerpDesignsIonity/Google-Docs/issues/new"
+          ),
       },
-      {
-        label: "Contact Us",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://techfiddle.io/contact");
-        },
-      },
-      { type: "separator" },
-      {
-        label: "GitHub",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://github.com/Comp-Labs/Google-Docs");
-        },
-      },
-      {
-        label: "YouTube",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://youtube.com/@techfiddle");
-        },
-      },
-      {
-        label: "Discord",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://discord.gg/GAbzAGKccW");
-        },
-      },
-      {
-        label: "Bento",
-        click: async () => {
-          const { shell } = require("electron");
-          await shell.openExternal("https://bento.me/techfiddle");
-        },
-      }
     ],
   },
 ];
 
-const menu = Menu.buildFromTemplate(template);
-Menu.setApplicationMenu(menu);
+Menu.setApplicationMenu(Menu.buildFromTemplate(template));
